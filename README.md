@@ -1,252 +1,191 @@
-# Space Apps Earth Data - Wildfire Emergency Response System
+# AeroGuard
 
-A full-stack emergency response application for wildfire monitoring and evacuation planning, built for NASA Space Apps Challenge. The system provides real-time wildfire tracking, safe location routing, emergency management services, and AI-powered air quality predictions using machine learning models trained on local environmental data.
+**Wildfire and air quality monitoring for the southeastern United States, built on NASA open data.**
+
+AeroGuard puts live wildfire events, ground-sensor air quality readings and short-term pollution forecasts in one place, and adds an AI assistant that turns those conditions into plain-language safety advice. It was built in a weekend by a five-person team for the [NASA Space Apps Challenge 2025](https://www.spaceappschallenge.org/).
+
+![Next.js](https://img.shields.io/badge/Next.js-15-black?logo=nextdotjs)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.118-009688?logo=fastapi&logoColor=white)
+![TensorFlow](https://img.shields.io/badge/TensorFlow-2.20-FF6F00?logo=tensorflow&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white)
+
+![AeroGuard landing page](docs/screenshots/landing.png)
+
+## Contents
+
+- [Features](#features)
+- [Architecture](#architecture)
+- [Tech stack](#tech-stack)
+- [Getting started](#getting-started)
+- [Project structure](#project-structure)
+- [Data sources](#data-sources)
+- [Known limitations](#known-limitations)
+- [Team](#team)
 
 ## Features
 
-### Citizen View
+| | |
+|---|---|
+| **Wildfire map** | Active wildfires from NASA EONET plotted over Georgia, North Carolina, South Carolina and Tennessee. A Citizen view shows your position relative to the nearest fire and routes you toward a safe location; an EMS view strips the map down to fires and incoming help requests. |
+| **Air quality dashboard** | Time-series charts and summary statistics for OpenAQ ground sensors, drawn with D3. |
+| **NO₂ forecast** | A Keras time-series model predicts the next NO₂ reading from the previous ten daily averages. |
+| **City AQI forecast** | Next-day AQI estimate for ten South Carolina cities, derived from NASA POWER weather data. |
+| **Advice chat** | Gemini-backed assistant with separate wildfire and air quality modes, giving location-specific precautions. |
+| **Incident reporting** | Forms for residents to report a wildfire or environmental emergency with coordinates. |
 
-- **Real-time Wildfire Tracking**: Live wildfire data from NASA EONET API
-- **AI-Powered Air Quality Predictions**: Machine learning models forecast air quality based on local environmental conditions
-- **Location Services**: Automatic location detection and city identification
-- **Safe Route Planning**: Navigate to computed safe locations away from wildfires
-- **Interactive Map**: Dynamic mapping with state boundaries (GA, NC, SC, TN)
-- **Emergency Alerts**: Visual wildfire proximity indicators
-- **Air Quality Monitoring**: Local air quality data integration and predictions
+![Wildfire map, Citizen view](docs/screenshots/wildfire-map.png)
 
-### EMS (Emergency Management Services) View
+## Architecture
 
-- **Wildfire-Only Display**: Focused view showing only active wildfires
-- **Help Request Markers**: Simulated emergency calls for assistance
-- **Response Coordination**: Visual management of emergency situations
-- **Geographic Focus**: Concentrated on southeastern US wildfire zones
+```mermaid
+flowchart LR
+    U([Browser]) --> FE
 
-## Tech Stack
+    subgraph FE["frontend/ · Next.js 15"]
+        P["Pages<br/>/ · /map · /aqi-anderson · /chat · /report"]
+        R["API routes<br/>/api/openaq · /api/ai · /api/report"]
+        P --> R
+    end
 
-### Frontend
+    subgraph BE["backend/ · FastAPI"]
+        N["/predict-no2"]
+        C["/city-aqi"]
+        A["/wildfire-advice<br/>/pollution-advice"]
+    end
 
-- **Next.js 15** - React framework with App Router
-- **TypeScript** - Type-safe development
-- **Tailwind CSS** - Utility-first styling
-- **Leaflet** - Interactive mapping library
-- **React Components** - Modular UI architecture
+    P -->|wildfire events| EONET[(NASA EONET)]
+    P -->|reverse geocoding| NOM[(Nominatim)]
+    P --> C
+    R -->|sensor data| OAQ[(OpenAQ)]
+    R --> N
+    R --> A
 
-### Backend & APIs
+    N --> K[["Keras NO₂ model"]]
+    C -->|daily weather| POWER[(NASA POWER)]
+    A --> G[(Google Gemini)]
+```
 
-- **NASA EONET API** - Real-time natural disaster events
-- **Nominatim (OpenStreetMap)** - Reverse geocoding services
-- **Google Maps Directions** - Route planning (optional)
-- **Mapbox Directions** - Alternative routing service (optional)
+The browser talks to the Next.js app. Next.js API routes hold the OpenAQ key and proxy model and advice requests to the Python service, which owns everything that needs TensorFlow, scikit-learn or Gemini. The notebooks in `ml/` are where the models were prototyped; they are not part of the request path.
 
-### AI/ML Components
+## Tech stack
 
-- **Python/TensorFlow** - Machine learning model training and inference
-- **Keras Models** - Pre-trained air quality prediction models (`.h5` format)
-- **Google Gemini AI** - Natural language processing and chat interface
-- **Jupyter Notebooks** - Data analysis and model development environment
-- **Air Quality Forecasting** - NO₂ prediction models with 10-window time series
+| Layer | Technology |
+|---|---|
+| Web app | Next.js 15 (App Router, Turbopack), React 19, TypeScript |
+| UI | Tailwind CSS 4, shadcn/ui, Radix primitives, lucide icons, next-themes |
+| Visualisation | Leaflet with OpenStreetMap tiles, D3 |
+| API | FastAPI, Uvicorn, Pydantic |
+| Machine learning | TensorFlow / Keras, scikit-learn, pandas, NumPy |
+| Generative AI | Google Gemini (`gemini-2.5-flash`) |
+| Research | Jupyter, earthaccess, xarray, netCDF4 |
 
-### Data Sources
-
-- **NASA Earth Observing System Data** - Wildfire event data
-- **PublicaMundi GeoJSON** - US state boundary data
-- **OpenAQ API** - Air quality measurements
-
-## Getting Started
+## Getting started
 
 ### Prerequisites
 
-- Node.js 18+ and npm
-- Python 3.8+ (for AI/backend components)
-- Git
+- Node.js 18.18 or newer
+- Python 3.11 or newer
+- An [OpenAQ API key](https://explore.openaq.org/register) and a [Gemini API key](https://aistudio.google.com/apikey), both free
 
-### Installation
-
-1. **Clone the repository**
-
-   ```bash
-   git clone https://github.com/your-username/space-apps-earth-data.git
-   cd space-apps-earth-data
-   ```
-
-2. **Frontend Setup**
-
-   ```bash
-   cd front-end
-   npm install
-   ```
-
-3. **Backend Setup**
-
-   ```bash
-   cd ../ai
-   python -m venv .venv
-   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-   pip install -r requirements.txt
-   ```
-
-4. **Environment Configuration**
-   Create `front-end/.env.local`:
-
-   ```env
-   NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your_google_maps_key
-   NEXT_PUBLIC_MAPBOX_TOKEN=your_mapbox_token
-   NEXT_PUBLIC_OPENAQ_API_KEY=your_openaq_key
-   ```
-
-   Create `ai/.env`:
-
-   ```env
-   GEMINI_API_KEY=your_gemini_api_key
-   ```
-
-### Running the Application
-
-1. **Start the Frontend**
-
-   ```bash
-   cd front-end
-   npm run dev
-   ```
-
-   Access at: `http://localhost:3000`
-
-2. **Start the Backend** (optional)
-   ```bash
-   cd ai
-   python main.py
-   ```
-
-## Usage
-
-### Navigation
-
-- Visit `/map` for the main wildfire monitoring interface
-- Use the view selector to switch between "Citizen" and "EMS" modes
-- Navigate through the app using the top navigation bar
-
-### Citizen Features
-
-1. **View Your Location**: Automatically placed near wildfire areas (simulated)
-2. **Navigate to Safety**: Click the red "Navigate to a safe location" button
-3. **Route Display**: See direct route lines and distance/time estimates
-4. **Local Information**: View your detected city and proximity alerts
-
-### EMS Features
-
-1. **Wildfire Overview**: Clean view of active wildfire locations only
-2. **Emergency Requests**: Red person icons indicate help requests
-3. **Response Planning**: Click markers for detailed emergency information
-
-## Project Structure
-
-```
-space-apps-earth-data/
-├── front-end/                 # Next.js application
-│   ├── app/                   # App router pages
-│   │   ├── map/              # Main map interface
-│   │   ├── chat/             # AI chat feature
-│   │   └── api/              # API routes
-│   ├── components/           # React components
-│   │   ├── region-map.tsx    # Main mapping component
-│   │   ├── map-viewer.tsx    # View controller
-│   │   └── ui/               # UI components
-│   └── lib/                  # Utilities
-├── ai/                       # Python AI/ML backend
-│   ├── main.py              # AI service entry point
-│   ├── gemini_wrapper.py    # Gemini AI integration
-│   ├── bridge.py            # AI service bridge
-│   ├── config.py            # AI configuration
-│   └── requirements.txt     # Python dependencies
-├── ai2/                     # ML models and data science
-│   ├── aqi_forecaster_model.h5    # Air quality prediction model
-│   ├── data_extract.py      # Data extraction utilities
-│   ├── data.ipynb          # Data analysis notebook
-│   ├── new_stuff.ipynb     # Latest model experiments
-│   └── stuff.ipynb         # Additional analysis
-├── backend/                 # Additional backend services
-│   ├── main.py             # Backend API server
-│   └── no2_pred_10_window_newer.keras  # NO₂ prediction model
-├── data/                    # Data processing and storage
-│   ├── extract_data.py     # Data extraction scripts
-│   ├── scratch.py          # Data processing utilities
-│   └── tempo_no2_data.csv  # TEMPO NO₂ dataset
-└── README.md               # This file
-```
-
-## AI/ML Models & Capabilities
-
-### Air Quality Prediction Models
-
-- **AQI Forecaster Model** (`aqi_forecaster_model.h5`): TensorFlow/Keras model for predicting Air Quality Index based on environmental conditions
-- **NO₂ Prediction Model** (`no2_pred_10_window_newer.keras`): Advanced time-series model using 10-window analysis for nitrogen dioxide concentration forecasting
-- **TEMPO NO₂ Integration**: Utilizes NASA TEMPO satellite data for ground-truth NO₂ measurements
-
-### Model Features
-
-- **Time Series Forecasting**: Multi-step ahead predictions for air quality metrics
-- **Environmental Data Integration**: Incorporates meteorological and geographical factors
-- **Real-time Inference**: Models optimized for low-latency predictions in emergency scenarios
-- **Local Air Quality Focus**: Specialized for southeastern US environmental conditions
-
-### AI-Powered Chat Interface
-
-- **Gemini AI Integration**: Natural language processing for emergency response queries
-- **Contextual Assistance**: AI chat helps users understand air quality data and evacuation recommendations
-- **Emergency Guidance**: Provides personalized safety recommendations based on current conditions
-
-### Data Science Notebooks
-
-- **Data Analysis** (`data.ipynb`): Exploratory data analysis of air quality patterns
-- **Model Experiments** (`new_stuff.ipynb`): Latest model training and validation experiments
-- **Research Documentation** (`stuff.ipynb`): Additional analysis and feature engineering
-
-### Data Pipeline
-
-- **TEMPO NO₂ Dataset**: Satellite-derived nitrogen dioxide measurements for model training
-- **Data Extraction**: Automated pipelines for processing environmental sensor data
-- **Feature Engineering**: Advanced preprocessing for time-series and geospatial data
-
-## 🔧 API Integrations
-
-### NASA EONET API
-
-- **Endpoint**: `https://eonet.gsfc.nasa.gov/api/v3/events`
-- **Purpose**: Real-time wildfire and natural disaster events
-- **Rate Limits**: Public API, no key required
-
-### Reverse Geocoding
-
-- **Service**: Nominatim (OpenStreetMap)
-- **Purpose**: Convert coordinates to city names
-- **Usage**: Automatic location identification
-
-### Optional Routing Services
-
-- **Google Maps Directions**: Premium routing with traffic data
-- **Mapbox Directions**: Alternative routing service
-- **Configuration**: Set API keys in environment variables
-
-## Development
-
-### Adding New Features
-
-1. Create feature branches: `git checkout -b feature/your-feature`
-2. Frontend components go in `front-end/components/`
-3. New pages use Next.js App Router in `front-end/app/`
-4. Follow TypeScript conventions and include proper typing
-
-### Testing
+### 1. Clone
 
 ```bash
-# Frontend
-cd front-end
-npm run build
-npm run lint
-
-# Backend
-cd ai
-python test_env.py
+git clone https://github.com/Rijifl/aeroguard-space-apps.git
+cd aeroguard-space-apps
 ```
 
-Built for NASA Space Apps Challenge 2025
+### 2. Start the API
+
+```bash
+python -m venv .venv
+source .venv/bin/activate        # Windows: .venv\Scripts\activate
+pip install -r backend/requirements.txt
+uvicorn backend.main:app --reload --port 8000
+```
+
+Set your Gemini key in `backend/main.py` first; see the [API README](backend/README.md#gemini-key).
+
+### 3. Start the web app
+
+In a second terminal:
+
+```bash
+cd frontend
+npm install
+npm install --no-save leaflet     # see Known limitations
+cp ../.env.example .env.local     # then add your OpenAQ key
+npm run dev
+```
+
+Open <http://localhost:3000>.
+
+The landing page and the wildfire map work without the API. The forecasts and the advice chat need it running on port 8000.
+
+## Project structure
+
+```
+aeroguard-space-apps/
+├── frontend/                Next.js web app
+│   ├── app/                 Pages and API routes
+│   ├── components/          Map, charts, forms, UI primitives
+│   └── public/              Static assets and the embedded AQI map
+├── backend/                 FastAPI service
+│   ├── main.py              All endpoints
+│   ├── no2_pred_10_window_newer.keras
+│   └── requirements.txt
+├── ml/                      Research: not used at runtime
+│   ├── notebooks/           Data collection and model experiments
+│   ├── models/              Saved experimental models
+│   ├── outputs/             Generated global AQI map
+│   └── data_extract.py      TEMPO access via earthaccess
+├── data/                    TEMPO NO₂ sample and extraction scripts
+├── docs/screenshots/
+└── .env.example
+```
+
+Each directory has its own README with more detail:
+
+- [`frontend/`](frontend/README.md): pages, API routes and components
+- [`backend/`](backend/README.md): endpoint reference with request and response examples
+- [`ml/`](ml/README.md): what each notebook and model file is
+- [`data/`](data/README.md): dataset schema and how to regenerate it
+
+## Data sources
+
+| Source | Used for |
+|---|---|
+| [NASA EONET](https://eonet.gsfc.nasa.gov/) | Live wildfire and natural event locations |
+| [NASA POWER](https://power.larc.nasa.gov/) | Daily weather inputs to the city AQI forecast |
+| [NASA TEMPO](https://tempo.si.edu/) | Satellite NO₂ columns explored in `data/` and `ml/` |
+| [NASA Earthdata CMR](https://cmr.earthdata.nasa.gov/) | Dataset discovery for TEMPO, OMI and SEDAC products |
+| [OpenAQ](https://openaq.org/) | Ground-sensor air quality measurements |
+| [OpenStreetMap](https://www.openstreetmap.org/) / Nominatim | Map tiles and reverse geocoding |
+
+## Known limitations
+
+This is hackathon code, preserved as it was submitted. The functional source is unchanged from the [original team repository](https://github.com/ben-cuff/space-apps-earth-data); this fork reorganises the layout and documentation only. Things a reader should know:
+
+- **Leaflet is not declared in `frontend/package.json`**, so it has to be installed separately as shown above.
+- **`npm run build` does not pass.** The project runs in development mode; type and lint errors block a production build.
+- **The API address is hardcoded** to `http://localhost:8000`, and the Gemini key is a constant in `backend/main.py` rather than an environment variable.
+- **Demo data is simulated in places.** The citizen position is placed at random near a real wildfire, safe-location routing is a straight line rather than a road route, EMS help requests are generated, and the landing page figures are static.
+- **The city AQI is a weather-derived estimate**, not a measurement, and its model is retrained on each request.
+- **Reports are not stored.** `/api/report` validates and logs a submission, then discards it.
+- **`/report` fails on first server render** (it reads `window` during SSR), and the landing page links to a `/global` page that does not exist. The inline report form on `/map` works.
+
+## Team
+
+Built at NASA Space Apps Challenge 2025 by:
+
+| Contributor | Focus |
+|---|---|
+| [Ben Cuff](https://github.com/ben-cuff) | Web app foundation, air quality dashboard, OpenAQ integration, FastAPI service |
+| [Ahmet Dokmeci](https://github.com/Rijifl) | Forecasting models, satellite data extraction, ML notebooks |
+| [Nimra Nayyar](https://github.com/nimnay) | Gemini integration, navigation, incident reporting |
+| [Angie Diaz](https://github.com/apa0) | Wildfire map, Citizen and EMS views, safe-location routing |
+| [nhun1214](https://github.com/nhun1214) | Contributor |
+
+## License
+
+No license has been published for this project. All rights remain with the contributors.

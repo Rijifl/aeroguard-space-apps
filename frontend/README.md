@@ -1,36 +1,65 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AeroGuard web app
 
-## Getting Started
+The AeroGuard user interface: a [Next.js 15](https://nextjs.org/) App Router application written in TypeScript, styled with Tailwind CSS 4 and [shadcn/ui](https://ui.shadcn.com/) components.
 
-First, run the development server:
+## Run
 
 ```bash
+npm install
+npm install --no-save leaflet
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open <http://localhost:3000>. Leaflet is imported by the map but is not listed in `package.json`, so it is installed separately. Pages that forecast or give advice also need the [API](../backend/README.md) running on port 8000.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Create `frontend/.env.local` from [`.env.example`](../.env.example) to enable live OpenAQ sensor data.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Script | Action |
+|---|---|
+| `npm run dev` | Development server with Turbopack |
+| `npm run build` | Production build (currently blocked by type and lint errors) |
+| `npm run start` | Serve the production build |
+| `npm run lint` | ESLint |
 
-## Learn More
+## Pages
 
-To learn more about Next.js, take a look at the following resources:
+| Route | Source | What it shows |
+|---|---|---|
+| `/` | [`app/page.tsx`](app/page.tsx) | Landing page with links into each tool |
+| `/map` | [`app/map/page.tsx`](app/map/page.tsx) | Wildfire map of GA, NC, SC and TN with Citizen and EMS views, a toggle to a global AQI map, and an inline wildfire report form |
+| `/aqi-anderson` | [`app/aqi-anderson/page.tsx`](app/aqi-anderson/page.tsx) | Air quality dashboard: OpenAQ sensor charts, NO₂ forecast and city AQI forecast |
+| `/chat` | [`app/chat/page.tsx`](app/chat/page.tsx) | Advice chat with wildfire and pollution modes |
+| `/report` | [`app/report/page.tsx`](app/report/page.tsx) | Environmental emergency report form (errors on server render; use the form on `/map`) |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## API routes
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+These run on the Next.js server and keep third-party calls out of the browser.
 
-## Deploy on Vercel
+| Route | Source | Behaviour |
+|---|---|---|
+| `GET /api/openaq` | [`app/api/openaq/route.ts`](app/api/openaq/route.ts) | Fetches measurements for five OpenAQ sensors |
+| `POST /api/openaq` | same | Fetches ten daily NO₂ averages from OpenAQ and forwards them to the API's `/predict-no2` |
+| `POST /api/ai` | [`app/api/ai/route.ts`](app/api/ai/route.ts) | Validates `mode` (`wildfire` or `pollution`) and proxies to the API's advice endpoints |
+| `POST /api/report` | [`app/api/report/route.ts`](app/api/report/route.ts) | Validates a report and returns a generated report ID |
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Key components
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Component | Role |
+|---|---|
+| [`components/region-map.tsx`](components/region-map.tsx) | Leaflet map: state outlines, NASA EONET wildfire markers, simulated citizen position, safe-location routing, EMS help-request markers |
+| [`components/map-viewer.tsx`](components/map-viewer.tsx) | Citizen / EMS view switch around the map |
+| [`components/aqi-visualization.tsx`](components/aqi-visualization.tsx) | D3 time-series charts, summary statistics and forecast cards |
+| [`components/inline-report-form.tsx`](components/inline-report-form.tsx) | Wildfire report form shown under the map |
+| [`components/ui/`](components/ui) | shadcn/ui primitives and the navigation bar |
+
+## Layout
+
+```
+frontend/
+├── app/            Routes, API handlers, global styles, root layout
+├── components/     Feature components and UI primitives
+├── constants/      Shared constants (Clemson coordinates)
+├── lib/            Utilities (class name helper)
+├── public/         Static assets, including the embedded AQI map (message.html)
+└── types/          Shared TypeScript types
+```
