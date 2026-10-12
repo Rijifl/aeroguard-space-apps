@@ -1,14 +1,14 @@
 {
-  "name": "space-apps-earth-data",
+  "name": "aeroguard-space-apps",
   "version": "1.0.0",
-  "description": "",
-  "homepage": "https://github.com/ben-cuff/space-apps-earth-data#readme",
+  "description": "AeroGuard: wildfire and air quality monitoring built on NASA open data (NASA Space Apps Challenge 2025)",
+  "homepage": "https://github.com/Rijifl/aeroguard-space-apps#readme",
   "bugs": {
-    "url": "https://github.com/ben-cuff/space-apps-earth-data/issues"
+    "url": "https://github.com/Rijifl/aeroguard-space-apps/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ben-cuff/space-apps-earth-data.git"
+    "url": "git+https://github.com/Rijifl/aeroguard-space-apps.git"
   },
   "license": "ISC",
   "author": "",
@@ -16,6 +16,6 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "npm --prefix front-end run dev & uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000"
+    "dev": "npm --prefix frontend run dev & uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000"
   }
 }
